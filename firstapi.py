@@ -7,6 +7,10 @@ import logging
 from bson import json_util
 import json
 import uvicorn
+from pymongo import MongoClient
+from datetime import datetime
+
+
 app = FastAPI()
 logger = logging.getLogger('uvicorn.error')
 class Task(BaseModel):
@@ -26,18 +30,48 @@ class MenuCard(BaseModel):
 	commonItems:str
 	nonVegItems:str
 	vegItems:str
+	
+class Order(BaseModel):
+	menuItems:str	
 
 tasks = []
 dbclient = pymongo.MongoClient("mongodb://localhost:27017/")
 dataBase = dbclient["BookUrMeal"]
 
 
+@app.post("/createOrder/")
+def createOrder(order: Order): 
+	print(order)
+	mdOrders = dataBase["Orders"]
+	orderID = datetime.today().strftime('%Y%m%d%H%M%S%s')
+	result = {"msg": "Order placed succesfully","orderID": orderID}
+	orderDict = order.__dict__
+	orderDict['orderID'] = orderID
+	orderDict['createdOn'] = datetime.today().strftime('%Y-%m-%d')
+	x = mdOrders.insert_one(orderDict)
+	return result
+
+@app.get("/getTodaysMenu")
+def getTodaysMenu(): 
+	mdMenus = dataBase["Menus"]
+	query = { "createdOn": datetime.today().strftime('%Y-%m-%d') }
+	print(query)
+	resultSet = mdMenus.find_one(query)
+	del resultSet["_id"]
+	return resultSet
 
 @app.post("/addItemsOnTodaysMenu/")
 def addItemsOnTodaysMenu(menuCard: MenuCard): 
+	print(menuCard)
+
 	mdMenus = dataBase["Menus"]
+	menudict = menuCard.__dict__
+	
+	menudict['createdOn'] = datetime.today().strftime('%Y-%m-%d')
+	print(menudict)
+	mdMenus.insert_one(menudict)
 	result = {"msg": "Menu added succesfully"}
-	x = mdMenus.insert_one(menuCard.__dict__)
+	
 	return result
 	
 @app.post("/registerUser/")
