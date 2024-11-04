@@ -114,6 +114,16 @@ def addItemsOnTodaysMenu(menuCard: MenuCard):
 	
 	return result
 	
+@app.put("/updateItemsOnTodaysMenu")
+def updateItemsOnTodaysMenu(updtmenuCard: MenuCard): 
+	mdMenus = dataBase["Menus"]
+	updmenudict = updtmenuCard.dict(exclude_unset=True)
+	menuDt = datetime.today().strftime('%Y-%m-%d')
+	print(menuDt)
+	mdMenus.update_one({"createdOn": menuDt},{"$set":updmenudict})
+	result = {"msg": "Menu updated succesfully"}
+	return result
+
 @app.post("/registerUser/")
 def registerUser(regUser: RegisterUser): 
 	mdUsers = dataBase["Users"]
@@ -176,4 +186,4 @@ def delete_task(task_id: int):
 
 
 if __name__ == "__main__":
-	uvicorn.run(app, host="127.0.0.1", port=8000)
+	uvicorn.run(app, host="192.168.29.243", port=8000)
