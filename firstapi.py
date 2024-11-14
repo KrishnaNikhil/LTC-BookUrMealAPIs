@@ -12,6 +12,9 @@ import uvicorn
 from pymongo import MongoClient
 from datetime import datetime, timedelta
 from bson import ObjectId
+from apns2.client import APNsClient
+from apns2.payload import Payload
+from apns2.credentials import TokenCredentials
 
 app = FastAPI()
 logger = logging.getLogger('uvicorn.error')
@@ -37,11 +40,53 @@ class Order(BaseModel):
 	menuItems:str
 	userId:str	
 
+class Token(BaseModel):
+	deviceToken:str
 
 
 tasks = []
 dbclient = pymongo.MongoClient("mongodb://localhost:27017/")
 dataBase = dbclient["BookUrMeal"]
+
+@app.post("/AddDeviceToken/")
+def addDeviceToken(token: Token): 
+	dTokens = dataBase["DeviceTokens"]	
+	print(token.deviceToken)
+	cursor = dTokens.find_one({"deviceToken":token.deviceToken})
+	if cursor == None:
+		x = dTokens.insert_one(token.__dict__)
+	else:
+		print("Device already registered")
+		
+	return {"msg":"Device registered"}
+
+
+@app.post("/MenuReadyNotif")
+def postMenuReadyNotif():
+	# Replace these with your actual APNs key and app details
+	KEY_PATH = "AuthKey_Z7V9BTP7Q7.p8"  # Path to the APNs .p8 key
+	KEY_ID = "Z7V9BTP7Q7"  # Your APNs key ID
+	TEAM_ID = "Y86K2MHN8H"  # Your Apple Developer Team ID
+	BUNDLE_ID = "com.nikhil.LTC-BookUrMeal"  # Your app's bundle ID
+	dTokens = dataBase["DeviceTokens"]	
+	tokens = []
+	cursor = dTokens.find({});
+	for document in cursor:
+		tokens.append(document['deviceToken'])
+
+	print(tokens)
+	# Initialize APNs client
+	token_credentials = TokenCredentials(KEY_PATH, KEY_ID, TEAM_ID)
+	client = APNsClient(credentials=token_credentials, use_sandbox=True)  # Set use_sandbox=False for production
+
+	# Create the payload for the push notification
+	payload = Payload(alert="Today's menu is ready. Go ahead and place your order!", badge=1, sound="default")
+
+	# Send the push notification
+	for token in tokens:
+		client.send_notification(token, payload, topic=BUNDLE_ID)
+
+	print("Notification sent successfully!")
 
 
 @app.get("/getLast7DaysOrders/{emailId}")
@@ -88,6 +133,7 @@ def createOrder(order: Order):
 	orderDict['orderID'] = orderID
 	orderDict['createdOn'] = datetime.today().strftime('%Y-%m-%d')
 	x = mdOrders.insert_one(orderDict)
+	postMenuReadyNotif()
 	return result
 
 @app.get("/getTodaysMenu")
@@ -111,7 +157,6 @@ def addItemsOnTodaysMenu(menuCard: MenuCard):
 	print(menudict)
 	mdMenus.insert_one(menudict)
 	result = {"msg": "Menu added succesfully"}
-	
 	return result
 	
 @app.put("/updateItemsOnTodaysMenu")

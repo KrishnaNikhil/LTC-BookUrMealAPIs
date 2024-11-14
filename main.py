@@ -1,5 +1,10 @@
 import jwt
   
+f = open("/Users/nikhilkvk/Documents/KeysAndCerts/AuthKey_Z7V9BTP7Q7.p8", "r")
+print(f.read())
+
+
+
 header = {  
   "alg": "HS256",  
   "typ": "JWT"  
