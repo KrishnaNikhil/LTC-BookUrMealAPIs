@@ -1,9 +1,11 @@
 import jwt
-  
+import uuid
+
+
 f = open("/Users/nikhilkvk/Documents/KeysAndCerts/AuthKey_Z7V9BTP7Q7.p8", "r")
 print(f.read())
-
-
+sv=str(uuid.uuid4())
+print(sv)
 
 header = {  
   "alg": "HS256",  

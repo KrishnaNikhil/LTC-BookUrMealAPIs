@@ -43,10 +43,26 @@ class Order(BaseModel):
 class Token(BaseModel):
 	deviceToken:str
 
+class OrderID(BaseModel):
+	orderID:str
 
 tasks = []
 dbclient = pymongo.MongoClient("mongodb://localhost:27017/")
 dataBase = dbclient["BookUrMeal"]
+
+@app.put("/updateOrderComplete")
+def updateOrderComplete(orderId: OrderID): 
+	mdOrders = dataBase["Orders"]
+	
+	query = { "orderID": orderId.orderID }
+	resultSet = mdOrders.find_one(query)
+	print(resultSet)
+	# resultSet = mdOrders.dict(exclude_unset=True)
+	resultSet["status"]="Order Complete"
+	
+	mdOrders.update_one(query,{"$set":resultSet})
+	result = {"msg": "Order "+orderId.orderID+" is now Complete"}
+	return result
 
 @app.post("/AddDeviceToken/")
 def addDeviceToken(token: Token): 
@@ -65,8 +81,8 @@ def addDeviceToken(token: Token):
 def postMenuReadyNotif():
 	# Replace these with your actual APNs key and app details
 	KEY_PATH = "AuthKey_Z7V9BTP7Q7.p8"  # Path to the APNs .p8 key
-	KEY_ID = ""  # Your APNs key ID
-	TEAM_ID = ""  # Your Apple Developer Team ID
+	KEY_ID = "Z7V9BTP7Q7"  # Your APNs key ID
+	TEAM_ID = "Y86K2MHN8H"  # Your Apple Developer Team ID
 	BUNDLE_ID = "com.nikhil.LTC-BookUrMeal"  # Your app's bundle ID
 	dTokens = dataBase["DeviceTokens"]	
 	tokens = []
@@ -131,9 +147,9 @@ def createOrder(order: Order):
 	result = {"msg": "Order placed succesfully","orderID": orderID}
 	orderDict = order.__dict__
 	orderDict['orderID'] = orderID
+	orderDict['status'] = "Order Placed"
 	orderDict['createdOn'] = datetime.today().strftime('%Y-%m-%d')
 	x = mdOrders.insert_one(orderDict)
-	postMenuReadyNotif()
 	return result
 
 @app.get("/getTodaysMenu")
@@ -231,4 +247,5 @@ def delete_task(task_id: int):
 
 
 if __name__ == "__main__":
+	# uvicorn.run(app, host="192.168.254.29", port=8000)
 	uvicorn.run(app, host="192.168.29.243", port=8000)
