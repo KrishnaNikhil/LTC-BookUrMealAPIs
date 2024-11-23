@@ -81,8 +81,8 @@ def addDeviceToken(token: Token):
 def postMenuReadyNotif():
 	# Replace these with your actual APNs key and app details
 	KEY_PATH = "AuthKey_Z7V9BTP7Q7.p8"  # Path to the APNs .p8 key
-	KEY_ID = "Z7V9BTP7Q7"  # Your APNs key ID
-	TEAM_ID = "Y86K2MHN8H"  # Your Apple Developer Team ID
+	KEY_ID = ""  # Your APNs key ID
+	TEAM_ID = ""  # Your Apple Developer Team ID
 	BUNDLE_ID = "com.nikhil.LTC-BookUrMeal"  # Your app's bundle ID
 	dTokens = dataBase["DeviceTokens"]	
 	tokens = []
